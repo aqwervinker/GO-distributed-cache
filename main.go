@@ -1,10 +1,11 @@
 package main
 
 import (
-	"GO-distributed-cache/cache"
-	"GO-distributed-cache/metrics"
 	"log"
 	"net/http"
+
+	"github.com/aqwervinker/GO-distributed-cache/cache"
+	"github.com/aqwervinker/GO-distributed-cache/metrics"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,10 +39,7 @@ func main() {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		if exists, err := distributedCache.Exists(key); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		} else if exists {
+		if exists := distributedCache.Exists(key); exists {
 			if err := distributedCache.Set(key, body.Value); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return

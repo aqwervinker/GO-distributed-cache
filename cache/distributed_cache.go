@@ -2,6 +2,10 @@ package cache
 
 import (
 	"sync"
+
+	"strconv"
+
+	"github.com/spaolacci/murmur3"
 )
 
 type CacheNode struct {
@@ -39,6 +43,13 @@ func (n *CacheNode) Delete(key string) error {
 	return nil
 }
 
+func (n *CacheNode) Exists(key string) (bool, error) {
+	n.mutex.RLock()
+	defer n.mutex.RUnlock()
+	_, ok := n.cache[key]
+	return ok, nil
+}
+
 type DistributedCache struct {
 	nodes    []*CacheNode
 	hashRing *HashRing
@@ -70,4 +81,19 @@ func (d *DistributedCache) Set(key string, value string) error {
 func (d *DistributedCache) Delete(key string) error {
 	node := d.hashRing.GetNode(key)
 	return node.Delete(key)
+}
+
+// Exists checks if a key exists in the cache
+func (d *DistributedCache) Exists(key string) bool {
+	hash := murmur3.Sum32([]byte(key))
+	hashStr := strconv.Itoa(int(hash))
+	node := d.hashRing.GetNode(hashStr)
+	if node == nil {
+		return false
+	}
+	exists, err := node.Exists(key)
+	if err != nil {
+		return false
+	}
+	return exists
 }
